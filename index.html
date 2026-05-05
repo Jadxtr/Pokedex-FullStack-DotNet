@@ -2,41 +2,98 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Minha Pokédex Simples</title>
+    <title>Pokédex GEX - Full Stack</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f0f0; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 40px; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .card img { width: 120px; height: 120px; background: #f9f9f9; border-radius: 50%; }
-        .type { display: inline-block; padding: 5px 10px; margin: 5px; border-radius: 20px; font-size: 12px; color: white; background: #777; }
-        /* Cores de exemplo */
-        .grass { background: #7AC74C; } .fire { background: #EE8130; } .water { background: #6390F0; }
+        :root {
+            --glass: #a8a878; --fire: #f08030; --water: #6890f0; --grass: #78c850;
+            --electric: #f8d030; --ice: #98d8d8; --fighting: #c03028; --poison: #a040a0;
+            --ground: #e0c068; --flying: #a890f0; --psychic: #f85888; --bug: #a8b820;
+            --rock: #b8a038; --ghost: #705898; --dragon: #7038f8; --dark: #705848;
+            --steel: #b8b8d0; --fairy: #ee99ac;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
+        
+        .header-container { text-align: center; margin-bottom: 30px; }
+        
+        /* BARRA DE PESQUISA */
+        #search-input {
+            padding: 12px 20px; width: 300px; border-radius: 25px; border: none;
+            font-size: 16px; outline: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        
+        /* CARD COM CORES DINÂMICAS */
+        .card { 
+            background: #2a2a2a; border-radius: 20px; padding: 20px; text-align: center;
+            transition: 0.3s; border: 3px solid transparent; position: relative;
+        }
+        
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+
+        .card img { width: 100%; max-width: 140px; filter: drop-shadow(2px 4px 6px black); }
+
+        .type-badge {
+            display: inline-block; padding: 5px 12px; border-radius: 15px;
+            margin: 5px; font-size: 12px; font-weight: bold; text-transform: uppercase;
+        }
+
+        /* Classes de cores baseadas no tipo */
+        .border-grass { border-color: var(--grass); } .bg-grass { background: var(--grass); }
+        .border-fire { border-color: var(--fire); } .bg-fire { background: var(--fire); }
+        .border-water { border-color: var(--water); } .bg-water { background: var(--water); }
+        .border-bug { border-color: var(--bug); } .bg-bug { background: var(--bug); }
+        .border-poison { border-color: var(--poison); } .bg-poison { background: var(--poison); }
+        .border-normal { border-color: var(--glass); } .bg-normal { background: var(--glass); }
+        /* Adicione outras conforme necessário ou use o estilo dinâmico no JS */
     </style>
 </head>
 <body>
-    <h1>Pokédex</h1>
-    <div id="pokedex" class="grid">Carregando Pokémon...</div>
+    <div class="header-container">
+        <h1>Pokédex GEX</h1>
+        <input type="text" id="search-input" placeholder="Pesquisar Pokémon por nome..." oninput="filtrarPokemons()">
+    </div>
+    
+    <div id="pokedex" class="grid">Carregando...</div>
 
     <script>
-        async function fetchPokemons() {
+        let todosPokemons = []; // Armazena a lista original para filtrar
+
+        async function carregarPokedex() {
             try {
-                // Chama a SUA API que você acabou de criar
                 const response = await fetch('http://localhost:5164/api/pokemon');
-                const data = await response.json();
-                
-                const container = document.getElementById('pokedex');
-                container.innerHTML = data.map(p => `
-                    <div class="card">
-                        <img src="${p.imageUrl}" alt="${p.name}">
-                        <h3>#${p.id} ${p.name.toUpperCase()}</h3>
-                        <div>${p.types.map(t => `<span class="type ${t}">${t}</span>`).join('')}</div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                document.getElementById('pokedex').innerText = "Erro ao carregar. Verifique se a API está rodando!";
+                todosPokemons = await response.json();
+                exibirPokemons(todosPokemons);
+            } catch (err) {
+                document.getElementById('pokedex').innerHTML = "Erro ao conectar com a API!";
             }
         }
-        fetchPokemons();
+
+        function exibirPokemons(lista) {
+            const container = document.getElementById('pokedex');
+            container.innerHTML = lista.map(p => {
+                const primeiroTipo = p.types[0]; // Pega o primeiro tipo para a cor da borda
+                return `
+                    <div class="card border-${primeiroTipo}">
+                        <img src="${p.imageUrl}" alt="${p.name}">
+                        <p style="color: #888;">#${p.id.toString().padStart(3, '0')}</p>
+                        <h2 style="margin: 10px 0;">${p.name}</h2>
+                        <div>
+                            ${p.types.map(t => `<span class="type-badge bg-${t}">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filtrarPokemons() {
+            const termo = document.getElementById('search-input').value.toLowerCase();
+            const filtrados = todosPokemons.filter(p => p.name.toLowerCase().includes(termo));
+            exibirPokemons(filtrados);
+        }
+
+        carregarPokedex();
     </script>
 </body>
 </html>
