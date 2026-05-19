@@ -14,29 +14,26 @@ public class PokemonService
 
     public async Task<List<PokemonDto>> GetStarterPokemonsAsync()
     {
-        // 1. Faz a chamada para a lista inicial (limite de 20 para performance)
         var response = await _httpClient.GetFromJsonAsync<PokeApiListResponse>("https://pokeapi.co/api/v2/pokemon?limit=20");
-        
         var pokemonList = new List<PokemonDto>();
 
         if (response != null && response.Results != null)
         {
             foreach (var item in response.Results)
             {
-                // 2. Para cada um, busca os detalhes completos
-                var detail = await _httpClient.GetFromJsonAsync<PokeApiDetailResponse>(item.Url);
+                var details = await _httpClient.GetFromJsonAsync<PokeApiDetailResponse>(item.Url);
 
-                if (detail != null)
+                if (details != null)
                 {
                     pokemonList.Add(new PokemonDto
                     {
-                        Id = detail.Id,
-                        Name = detail.Name,
-                        ImageUrl = detail.Sprites.Other?.OfficialArtwork?.FrontDefault ?? detail.Sprites.Front_default,
-                        Types = detail.Types.Select(t => t.Type.Name).ToList(),
-                        Height = detail.Height,
-                        Weight = detail.Weight,
-                        Abilities = detail.Abilities.Select(a => a.Ability.Name).ToList()
+                        Id = details.Id,
+                        Name = details.Name,
+                        ImageUrl = details.Sprites.Other.OfficialArtwork.FrontDefault,
+                        Types = details.Types.Select(t => t.Type.Name).ToList(),
+                        Height = details.Height,
+                        Weight = details.Weight,
+                        Abilities = details.Abilities.Select(a => a.Ability.Name).ToList()
                     });
                 }
             }
@@ -46,45 +43,44 @@ public class PokemonService
     }
 }
 
-// Classes auxiliares para desserializar o JSON da PokeAPI
-public class PokeApiListResponse 
-{ 
-    public List<PokeApiResult> Results { get; set; } = new(); 
+// Classes espelho para desserialização da PokeAPI
+public class PokeApiListResponse
+{
+    public List<PokeApiResult> Results { get; set; } = new();
 }
 
-public class PokeApiResult 
-{ 
-    public string Name { get; set; } = default!; 
-    public string Url { get; set; } = default!; 
+public class PokeApiResult
+{
+    public string Name { get; set; } = default!;
+    public string Url { get; set; } = default!;
 }
 
-public class PokeApiDetailResponse 
+public class PokeApiDetailResponse
 {
     public int Id { get; set; }
     public string Name { get; set; } = default!;
-    public Sprites Sprites { get; set; } = default!;
-    public List<TypeSlot> Types { get; set; } = default!;
+    public PokemonSprites Sprites { get; set; } = default!;
+    public List<TypeSlot> Types { get; set; } = new();
     public int Height { get; set; }
     public int Weight { get; set; }
-    public List<AbilitySlot> Abilities { get; set; } = default!;
+    public List<AbilitySlot> Abilities { get; set; } = new();
 }
 
-public class Sprites 
-{ 
-    public string Front_default { get; set; } = default!; 
-    public Other Other { get; set; } = default!; 
+public class PokemonSprites
+{
+    public OtherSprites Other { get; set; } = default!;
 }
 
-public class Other 
-{ 
+public class OtherSprites
+{
     [System.Text.Json.Serialization.JsonPropertyName("official-artwork")]
-    public OfficialArtwork OfficialArtwork { get; set; } = default!; 
+    public OfficialArtwork OfficialArtwork { get; set; } = default!;
 }
 
-public class OfficialArtwork 
-{ 
+public class OfficialArtwork
+{
     [System.Text.Json.Serialization.JsonPropertyName("front_default")]
-    public string FrontDefault { get; set; } = default!; 
+    public string FrontDefault { get; set; } = default!;
 }
 
 public class TypeSlot { public TypeInfo Type { get; set; } = default!; }

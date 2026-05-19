@@ -1,34 +1,40 @@
-using PokedexAPI.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. ADICIONE ISTO: Suporte para Controllers
+// ==========================================
+// 1. CONFIGURAÇÃO DOS SERVIÇOS (DI)
+// ==========================================
+
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
 
-// 2. ADICIONE ISTO: Configuração do HttpClient e do seu Serviço
-builder.Services.AddHttpClient<PokemonService>();
-builder.Services.AddScoped<PokemonService>();
+// 💡 ATIVA O HTTPCLIENT (A linha que faltava para o seu PokemonService funcionar!)
+builder.Services.AddHttpClient();
 
-// 3. ADICIONE ISTO: Liberar o acesso para o seu index.html (CORS)
-builder.Services.AddCors(options => {
-    options.AddDefaultPolicy(policy => {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+// Registro do seu serviço usando o caminho completo
+builder.Services.AddScoped<PokedexAPI.Services.PokemonService>();
+
+// Configuração do CORS para liberar o projeto Angular rodar livremente
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
 
-// Configurações de ambiente
-if (app.Environment.IsDevelopment())
-{
-    // O template novo usa OpenAPI em vez de Swagger por padrão
-    app.MapOpenApi();
-}
+// ==========================================
+// 2. MIDDLEWARES / PIPELINE
+// ==========================================
 
-// 4. ADICIONE ISTO: Ativar o CORS e mapear as Controllers
-app.UseCors();
+app.UseCors("AllowAngular");
+
+app.UseHttpsRedirection();
+
 app.UseAuthorization();
-app.MapControllers(); 
+
+app.MapControllers();
 
 app.Run();
