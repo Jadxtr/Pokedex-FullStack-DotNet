@@ -5,7 +5,7 @@
     <title>Pokédex GEX - Full Stack</title>
     <style>
         :root {
-            --glass: #a8a878; --fire: #f08030; --water: #6890f0; --grass: #78c850;
+            --normal: #a8a878; --fire: #f08030; --water: #6890f0; --grass: #78c850;
             --electric: #f8d030; --ice: #98d8d8; --fighting: #c03028; --poison: #a040a0;
             --ground: #e0c068; --flying: #a890f0; --psychic: #f85888; --bug: #a8b820;
             --rock: #b8a038; --ghost: #705898; --dragon: #7038f8; --dark: #705848;
@@ -14,7 +14,11 @@
 
         body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
         .header-container { text-align: center; margin-bottom: 30px; }
-        #search-input { padding: 12px 20px; width: 300px; border-radius: 25px; border: none; font-size: 16px; outline: none; }
+        
+        #search-input { 
+            padding: 12px 20px; width: 300px; border-radius: 25px; border: none; 
+            font-size: 16px; outline: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
         
@@ -23,17 +27,29 @@
             transition: 0.3s; border: 3px solid transparent; cursor: pointer;
         }
         .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .card img { width: 100%; max-width: 140px; }
+        .card img { width: 100%; max-width: 140px; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3)); }
 
         .type-badge { display: inline-block; padding: 5px 12px; border-radius: 15px; margin: 5px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
 
-        /* Estilos de Cores */
-        .border-grass { border-color: var(--grass); } .bg-grass { background: var(--grass); }
+        /* Classes CSS de bordas e fundos geradas dinamicamente via variáveis */
+        .border-normal { border-color: var(--normal); } .bg-normal { background: var(--normal); }
         .border-fire { border-color: var(--fire); } .bg-fire { background: var(--fire); }
         .border-water { border-color: var(--water); } .bg-water { background: var(--water); }
-        .border-bug { border-color: var(--bug); } .bg-bug { background: var(--bug); }
+        .border-grass { border-color: var(--grass); } .bg-grass { background: var(--grass); }
+        .border-electric { border-color: var(--electric); } .bg-electric { background: var(--electric); }
+        .border-ice { border-color: var(--ice); } .bg-ice { background: var(--ice); }
+        .border-fighting { border-color: var(--fighting); } .bg-fighting { background: var(--fighting); }
         .border-poison { border-color: var(--poison); } .bg-poison { background: var(--poison); }
-        .border-normal { border-color: var(--glass); } .bg-normal { background: var(--glass); }
+        .border-ground { border-color: var(--ground); } .bg-ground { background: var(--ground); }
+        .border-flying { border-color: var(--flying); } .bg-flying { background: var(--flying); }
+        .border-psychic { border-color: var(--psychic); } .bg-psychic { background: var(--psychic); }
+        .border-bug { border-color: var(--bug); } .bg-bug { background: var(--bug); }
+        .border-rock { border-color: var(--rock); } .bg-rock { background: var(--rock); }
+        .border-ghost { border-color: var(--ghost); } .bg-ghost { background: var(--ghost); }
+        .border-dragon { border-color: var(--dragon); } .bg-dragon { background: var(--dragon); }
+        .border-dark { border-color: var(--dark); } .bg-dark { background: var(--dark); }
+        .border-steel { border-color: var(--steel); } .bg-steel { background: var(--steel); }
+        .border-fairy { border-color: var(--fairy); } .bg-fairy { background: var(--fairy); }
 
         /* MODAL */
         .modal {
@@ -41,22 +57,22 @@
             background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
         }
         .modal-content {
-            background-color: #333; margin: 10% auto; padding: 30px; border-radius: 20px;
-            width: 80%; max-width: 400px; text-align: center; border: 4px solid white;
+            background-color: #2a2a2a; margin: 10% auto; padding: 30px; border-radius: 20px;
+            width: 85%; max-width: 380px; text-align: center; border: 4px solid #444; position: relative;
         }
-        .close { float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close { position: absolute; right: 20px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; color: #888; }
+        .close:hover { color: white; }
     </style>
 </head>
 <body>
 
     <div class="header-container">
         <h1>Pokédex GEX</h1>
-        <input type="text" id="search-input" placeholder="Pesquisar Pokémon..." oninput="filtrarPokemons()">
+        <input type="text" id="search-input" placeholder="Pesquisar Pokémon por nome..." oninput="filtrarPokemons()">
     </div>
     
-    <div id="pokedex" class="grid">Carregando...</div>
+    <div id="pokedex" class="grid">Carregando Pokédex...</div>
 
-    <!-- Estrutura do Modal -->
     <div id="pokedexModal" class="modal">
         <div class="modal-content" id="modal-body">
             <span class="close" onclick="fecharModal()">&times;</span>
@@ -73,17 +89,21 @@
                 todosPokemons = await response.json();
                 exibirPokemons(todosPokemons);
             } catch (err) {
-                document.getElementById('pokedex').innerHTML = "Erro ao conectar com a API!";
+                document.getElementById('pokedex').innerHTML = "Erro ao conectar com a API Backend!";
             }
         }
 
         function exibirPokemons(lista) {
             const container = document.getElementById('pokedex');
+            if(lista.length === 0) {
+                container.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Nenhum Pokémon encontrado.</p>";
+                return;
+            }
             container.innerHTML = lista.map(p => `
                 <div class="card border-${p.types[0]}" onclick="mostrarDetalhes(${p.id})">
                     <img src="${p.imageUrl}" alt="${p.name}">
-                    <p style="color: #888;">#${p.id.toString().padStart(3, '0')}</p>
-                    <h2>${p.name}</h2>
+                    <p style="color: #888; margin: 5px 0 0 0;">#${p.id.toString().padStart(3, '0')}</p>
+                    <h2 style="margin: 5px 0 10px 0; text-transform: capitalize;">${p.name}</h2>
                     <div>${p.types.map(t => `<span class="type-badge bg-${t}">${t}</span>`).join('')}</div>
                 </div>
             `).join('');
@@ -94,13 +114,32 @@
             const modal = document.getElementById('pokedexModal');
             const conteudo = document.getElementById('detalhes-pokemon');
 
+            // Converte decímetros para metros e hectogramas para quilogramas
+            const alturaMetros = (pokemon.height / 10).toFixed(1);
+            const pesoKg = (pokemon.weight / 10).toFixed(1);
+
             conteudo.innerHTML = `
-                <img src="${pokemon.imageUrl}" style="width: 200px">
-                <h1 style="text-transform: capitalize;">${pokemon.name}</h1>
-                <p><strong>ID:</strong> #${pokemon.id}</p>
-                <p><strong>Tipos:</strong> ${pokemon.types.join(' e ')}</p>
-                <hr style="border: 1px solid #444">
-                <p><em>Este é um dos 20 pokémons iniciais carregados via PokedexAPI no padrão GEX.</em></p>
+                <img src="${pokemon.imageUrl}" style="width: 180px; filter: drop-shadow(2px 4px 8px rgba(0,0,0,0.6));">
+                <h1 style="text-transform: capitalize; margin: 10px 0 5px 0;">${pokemon.name}</h1>
+                <p style="color: #888; margin: 0 0 20px 0;">Nº ${pokemon.id.toString().padStart(3, '0')}</p>
+                
+                <div style="display: flex; justify-content: space-around; background: #1f1f1f; padding: 12px; border-radius: 12px; margin-bottom: 20px;">
+                    <div>
+                        <span style="display: block; font-size: 0.85em; color: #777; margin-bottom: 3px;">ALTURA</span>
+                        <strong style="font-size: 1.1em;">${alturaMetros} m</strong>
+                    </div>
+                    <div>
+                        <span style="display: block; font-size: 0.85em; color: #777; margin-bottom: 3px;">PESO</span>
+                        <strong style="font-size: 1.1em;">${pesoKg} kg</strong>
+                    </div>
+                </div>
+
+                <div style="text-align: left; background: #1f1f1f; padding: 15px; border-radius: 12px;">
+                    <strong style="color: #ffcb05; display: block; margin-bottom: 8px; font-size: 0.9em; letter-spacing: 1px;">HABILIDADES</strong>
+                    <span style="text-transform: capitalize; font-size: 0.95em; line-height: 1.4;">
+                        ${pokemon.abilities.join(', ').replace(/-/g, ' ')}
+                    </span>
+                </div>
             `;
 
             document.getElementById('modal-body').className = `modal-content border-${pokemon.types[0]}`;
@@ -111,9 +150,9 @@
             document.getElementById('pokedexModal').style.display = "none";
         }
 
-        // Fechar se clicar fora da caixa branca
         window.onclick = function(event) {
-            if (event.target == document.getElementById('pokedexModal')) {
+            const modal = document.getElementById('pokedexModal');
+            if (event.target == modal) {
                 fecharModal();
             }
         }

@@ -1,13 +1,12 @@
-using PokedexAPI.Models; // Esta linha avisa ao serviço onde procurar o Dto
+using PokedexAPI.Models;
 using System.Net.Http.Json;
-using System.Text.Json.Serialization;
+
 namespace PokedexAPI.Services;
 
 public class PokemonService
 {
     private readonly HttpClient _httpClient;
 
-    // Construtor: O ASP.NET injeta o HttpClient aqui automaticamente
     public PokemonService(HttpClient httpClient)
     {
         _httpClient = httpClient;
@@ -15,7 +14,7 @@ public class PokemonService
 
     public async Task<List<PokemonDto>> GetStarterPokemonsAsync()
     {
-        // 1. Faz a chamada para a lista (limite de 20 para ser rápido)
+        // 1. Faz a chamada para a lista inicial (limite de 20 para performance)
         var response = await _httpClient.GetFromJsonAsync<PokeApiListResponse>("https://pokeapi.co/api/v2/pokemon?limit=20");
         
         var pokemonList = new List<PokemonDto>();
@@ -24,18 +23,20 @@ public class PokemonService
         {
             foreach (var item in response.Results)
             {
-                // 2. Para cada um, busca os detalhes (onde está a foto)
-                var details = await _httpClient.GetFromJsonAsync<PokeApiDetailResponse>(item.Url);
-                
-                if (details != null)
+                // 2. Para cada um, busca os detalhes completos
+                var detail = await _httpClient.GetFromJsonAsync<PokeApiDetailResponse>(item.Url);
+
+                if (detail != null)
                 {
                     pokemonList.Add(new PokemonDto
                     {
-                        Id = details.Id,
-                        Name = details.Name,
-                        // URL da imagem oficial (mais bonita que o sprite antigo)
-                        ImageUrl = details.Sprites.Other.OfficialArtwork.FrontDefault,
-                        Types = details.Types.Select(t => t.Type.Name).ToList()
+                        Id = detail.Id,
+                        Name = detail.Name,
+                        ImageUrl = detail.Sprites.Other?.OfficialArtwork?.FrontDefault ?? detail.Sprites.Front_default,
+                        Types = detail.Types.Select(t => t.Type.Name).ToList(),
+                        Height = detail.Height,
+                        Weight = detail.Weight,
+                        Abilities = detail.Abilities.Select(a => a.Ability.Name).ToList()
                     });
                 }
             }
@@ -45,28 +46,49 @@ public class PokemonService
     }
 }
 
-// Essas classes aqui embaixo servem apenas para o C# entender o JSON da PokeAPI
-public class PokeApiListResponse { public List<PokeApiResult> Results { get; set; } }
-public class PokeApiResult { public string Name { get; set; } public string Url { get; set; } }
-public class PokeApiDetailResponse { 
-    public int Id { get; set; } 
-    public string Name { get; set; } 
-    public Sprites Sprites { get; set; } 
-    public List<TypeSlot> Types { get; set; }
+// Classes auxiliares para desserializar o JSON da PokeAPI
+public class PokeApiListResponse 
+{ 
+    public List<PokeApiResult> Results { get; set; } = new(); 
 }
-public class Sprites { public Other Other { get; set; } }
-// Certifique-se de que o nome da propriedade na classe Other 
-// seja igual ao que você chama no código (OfficialArtwork)
+
+public class PokeApiResult 
+{ 
+    public string Name { get; set; } = default!; 
+    public string Url { get; set; } = default!; 
+}
+
+public class PokeApiDetailResponse 
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = default!;
+    public Sprites Sprites { get; set; } = default!;
+    public List<TypeSlot> Types { get; set; } = default!;
+    public int Height { get; set; }
+    public int Weight { get; set; }
+    public List<AbilitySlot> Abilities { get; set; } = default!;
+}
+
+public class Sprites 
+{ 
+    public string Front_default { get; set; } = default!; 
+    public Other Other { get; set; } = default!; 
+}
+
 public class Other 
 { 
-    [JsonPropertyName("official-artwork")]
-    public OfficialArtwork OfficialArtwork { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("official-artwork")]
+    public OfficialArtwork OfficialArtwork { get; set; } = default!; 
 }
 
 public class OfficialArtwork 
 { 
-    [JsonPropertyName("front_default")]
-    public string FrontDefault { get; set; } = default!;
+    [System.Text.Json.Serialization.JsonPropertyName("front_default")]
+    public string FrontDefault { get; set; } = default!; 
 }
-public class TypeSlot { public TypeInfo Type { get; set; } }
-public class TypeInfo { public string Name { get; set; } }
+
+public class TypeSlot { public TypeInfo Type { get; set; } = default!; }
+public class TypeInfo { public string Name { get; set; } = default!; }
+
+public class AbilitySlot { public AbilityInfo Ability { get; set; } = default!; }
+public class AbilityInfo { public string Name { get; set; } = default!; }
